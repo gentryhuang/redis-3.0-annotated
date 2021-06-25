@@ -970,7 +970,7 @@ void activeExpireCycle(int type) {
             if (num > ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP)
                 num = ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP;
 
-            // 开始遍历数据库
+            // 开始遍历数据库中 num 个 key
             while (num--) {
                 dictEntry *de;
                 long long ttl;
@@ -1215,14 +1215,20 @@ void clientsCron(void) {
 
 /* This function handles 'background' operations we are required to do
  * incrementally in Redis databases, such as active key expiring, resizing,
- * rehashing. */
+ * rehashing.
+ *
+ * 这个函数处理"后台"操作，我们需要做增量在 Redis 数据库，如活动键过期，调整大小，重新散列
+ */
 // 对数据库执行删除过期键，调整大小，以及主动和渐进式 rehash
 void databasesCron(void) {
 
     // 函数先从数据库中删除过期键，然后再对数据库的大小进行修改
 
     /* Expire keys by random sampling. Not required for slaves
-     * as master will synthesize DELs for us. */
+     * as master will synthesize DELs for us.
+     *
+     * 通过随机抽样过期 key,不需要为从节点，因为主节点将为我们合成 DELS
+     */
     // 如果服务器不是从服务器，那么执行主动过期键清除
     if (server.active_expire_enabled && server.masterhost == NULL)
         // 清除模式为 CYCLE_SLOW ，这个模式会尽量多清除过期键
@@ -1230,7 +1236,10 @@ void databasesCron(void) {
 
     /* Perform hash tables rehashing if needed, but only if there are no
      * other processes saving the DB on disk. Otherwise rehashing is bad
-     * as will cause a lot of copy-on-write of memory pages. */
+     * as will cause a lot of copy-on-write of memory pages.
+     *
+     * 在磁盘上没有其他进程保存DB的情况，可以执行哈希表 rehash。否则，rehash 是不好的，因为这会导致大量内存页的写时复制。
+     */
     // 在没有 BGSAVE 或者 BGREWRITEAOF 执行时，对哈希表进行 rehash
     if (server.rdb_child_pid == -1 && server.aof_child_pid == -1) {
         /* We use global counters so if we stop the computation at a given
